@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: your_username
+      POSTGRES_PASSWORD: your_password
+      POSTGRES_DB: userdb
+    ports:
+      - "5433:5432"
+    volumes: 
+      - postgres_data_2:/var/lib/postgresql/data
+
+  # openam:
+  #   image: openidentityplatform/openam:latest
+  #   ports:
+  #     - "8080:8080"
+  #   hostname: openam.example.com
+  #   volumes:
+  #     - ./persistence/openam:/usr/openam/config
+
+  # opendj:
+  #   image: openidentityplatform/opendj:latest
+  #   hostname: opendj.example.com
+  #   ports:
+  #     - "1389:1389"
+  #     - "1636:1636"
+  #     - "4444:4444"
+  #   volumes:
+  #     - ./opendj/bootstrap/data/:/opt/opendj/bootstrap/data #initial data
+  #     - ./opendj/bootstrap/schema/:/opt/opendj/bootstrap/schema #schema
+  #     - ./persistence/opendj:/opt/opendj/data #opendj data
+  #   environment:
+  #     - BASE_DN=dc=openam,dc=openidentityplatform,dc=example.com #should be yours base DN
+  
+volumes:
+  postgres_data_2:
