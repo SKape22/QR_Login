@@ -4,20 +4,20 @@ Node Version: v20.11.0
 ### Frontend
 ***
 ``` 
-cd /ftnd
+cd ./ftnd
 npm i
 npm run dev
 ```
 ### Backend
 ***
 ``` 
-cd /bknd
+cd ./bknd
 npm i
 npm run start-ts
 ```
 ### Database
 ***
 ```
-cd /bknd
+cd ./bknd
 docker-compose up
 ```
