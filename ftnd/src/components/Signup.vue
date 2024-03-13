@@ -12,6 +12,7 @@
 
             <button class="w-full px-6 py-5 mb-5 text-sm font-bold leading-non transition duration-300 md:w-96 text-white rounded-2xl hover:bg-blue-400 focus:ring-4 focus:ring-indigo-500 bg-blue-500">Sign In</button>
             <p class="text-sm leading-relaxed text-gray-600">Already registered? <RouterLink to="/login" class="font-bold text-gray-600 hover:text-gray-500">Login</RouterLink></p>
+            <p class="text-sm leading-relaxed text-gray-600">Signup using <RouterLink to="/signup-webauthn" class="font-bold text-gray-600 hover:text-gray-500">Webauthn</RouterLink></p>
           </form>
         </div>
       </div>

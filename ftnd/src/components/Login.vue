@@ -15,6 +15,9 @@
             <p class="text-sm leading-relaxed text-gray-600">Not registered yet? <RouterLink
                 class="font-bold text-gray-600 hover:text-gray-500" to="/signup">Create an Account</RouterLink>
             </p>
+            <p class="text-sm leading-relaxed text-gray-600">Login using <RouterLink
+                class="font-bold text-gray-600 hover:text-gray-500" to="/login-webauthn">Webauthn</RouterLink>
+            </p>
           </form>
         </div>
       </div>

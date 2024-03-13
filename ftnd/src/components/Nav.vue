@@ -4,7 +4,7 @@
           <RouterLink class="hover:text-white" to="/">Home</RouterLink>
           <div v-if="!(Login.isLogin)" class="flex gap-5 flex-row">
             <RouterLink class="hover:text-white" to="/login">Login</RouterLink>
-            <RouterLink class="hover:text-white" to="/Signup">Signup</RouterLink>
+            <RouterLink class="hover:text-white" to="/signup">Signup</RouterLink>
           </div>
           <button v-else @click="Login.handleLogout">LogOut</button>
         </nav>
