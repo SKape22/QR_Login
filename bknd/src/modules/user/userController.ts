@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { CreateUserInput, Enable2FAInput, LoginUserInput, Verify2FA } from "./userSchema";
+import { CreateUserInput, Enable2FAInput, LoginUserInput, Verify2FA, CreateUserWauthnInput } from "./userSchema";
 import bcrypt from 'bcrypt'
 import { Pool } from 'pg'
 // import { utils } from "@passwordless-id/webauthn";
@@ -213,41 +213,42 @@ export async function verify2fa(
   }
 
 export async function createUserWebauthn(
-  req: FastifyRequest<{Body: CreateUserInput}>, reply: FastifyReply) {
+  req: FastifyRequest<{Body: CreateUserWauthnInput}>, reply: FastifyReply) {
     console.log(req.body);
-    const {password, email, username} = req.body;  
+    const {password, email, username, challenge} = req.body;  
   
     try {
-      const connection = await pool.connect();
+      // const connection = await pool.connect();
 
-      const usernameResult = await connection.query(
-        'SELECT * FROM users WHERE username = $1',
-        [username],
-      );
+      // const usernameResult = await connection.query(
+      //   'SELECT * FROM users WHERE username = $1',
+      //   [username],
+      // );
 
-      if (usernameResult.rows.length > 0) {
-        return reply.status(400).send({ message: 'Username already exists' });
-      }
+      // if (usernameResult.rows.length > 0) {
+      //   return reply.status(400).send({ message: 'Username already exists' });
+      // }
 
-      const emailResult = await connection.query(
-        'SELECT * FROM users WHERE email = $1',
-        [email],
-      );
+      // const emailResult = await connection.query(
+      //   'SELECT * FROM users WHERE email = $1',
+      //   [email],
+      // );
     
-      if (emailResult.rows.length > 0) {
-        return reply.status(400).send({ message: 'Email already exists' });
-      }
+      // if (emailResult.rows.length > 0) {
+      //   return reply.status(400).send({ message: 'Email already exists' });
+      // }
     
-      const hash = await bcrypt.hash(password, SALT_ROUNDS)
+      // const hash = await bcrypt.hash(password, SALT_ROUNDS)
 
-      const result = await connection.query(
-        'INSERT INTO users (username, email, password) values ($1,$2,$3);',
-        [`${username}`, `${email}`, `${hash}`]
-      )  
-      connection.release();
+      // const result = await connection.query(
+      //   'INSERT INTO users (username, email, password) values ($1,$2,$3);',
+      //   [`${username}`, `${email}`, `${hash}`]
+      // )  
+      // connection.release();
 
-      
-      return reply.code(201).send({status: true , message: 'User Created Successfully'});
+      console.log(challenge)
+      return reply.code(201).send({status: true , message: {'Challenge: ': challenge}});
+      // return reply.code(201).send(challenge);
       
     } catch (err) {
       return reply.code(500).send(err)

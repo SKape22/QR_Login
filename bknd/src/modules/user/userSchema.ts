@@ -7,7 +7,16 @@ const createUserSchema = z.object({
   username: z.string()
 })
 
+const createUserWauthnSchema = z.object({
+  email: z.string(),
+  password: z.string().min(6),
+  username: z.string(),
+  challenge: z.string()
+})
+
 export type CreateUserInput = z.infer<typeof createUserSchema>
+
+export type CreateUserWauthnInput = z.infer<typeof createUserWauthnSchema>
 
 const createUserResponseSchema = z.object({
   id: z.string(),
