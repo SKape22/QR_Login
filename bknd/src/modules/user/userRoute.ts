@@ -1,6 +1,6 @@
 import { FastifyInstance} from 'fastify'
-import { createUser, login, logout, enable2fa, verify2fa, generateChallenge, createUserWebauthn, loginWebauthn } from './userController'
-import { CreateUserInput, LoginUserInput, Enable2FAInput, Verify2FA } from './userSchema'
+import { createUser, login, logout, enable2fa, verify2fa, generateChallenge, createUserWebauthn, loginWebauthn,  } from './userController'
+import { CreateUserInput, LoginUserInput, Enable2FAInput, Verify2FA, CreateUserWauthnInput } from './userSchema'
 
 export async function userRoutes(app: FastifyInstance) {
   app.get('/challenge', generateChallenge)
@@ -19,7 +19,7 @@ export async function userRoutes(app: FastifyInstance) {
 
   app.post<{ Body: Verify2FA }>('/verify2FA', {preHandler: [app.authenticate]}, verify2fa)
 
-  app.post<{ Body: CreateUserInput, }>('/signup-webauthn', createUserWebauthn);
+  app.post<{ Body: CreateUserWauthnInput, }>('/signup-webauthn', createUserWebauthn);
 
   app.post<{ Body: LoginUserInput }>('/login-webauthn', loginWebauthn);
 
