@@ -1,8 +1,8 @@
 import fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import cors from '@fastify/cors';
-import { userRoutes } from './modules/user/user.route';
-import { userSchemas } from './modules/user/user.schema';
+import { userRoutes } from './modules/user/userRoute';
+import { userSchemas } from './modules/user/userSchema';
 import fjwt, { FastifyJWT } from '@fastify/jwt'
 import fCookie from '@fastify/cookie'
 import './utils/types'

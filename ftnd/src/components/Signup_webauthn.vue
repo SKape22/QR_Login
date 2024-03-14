@@ -21,6 +21,8 @@
 
 
 <script setup>
+import { client } from '@passwordless-id/webauthn'
+// const challenge = ""
 import { useSignupStore } from '@/stores/Auth';
 import { RouterLink } from 'vue-router';
 
