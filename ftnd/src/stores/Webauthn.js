@@ -1,7 +1,8 @@
-import { ref, computed } from 'vue'
+import { ref, computed, toRaw } from 'vue'
 import { defineStore } from 'pinia'
 import router from '@/router';
 import axios from 'axios';
+import { client } from '@passwordless-id/webauthn';
 
 async function generateChallenge() {
   try {
@@ -30,8 +31,21 @@ export const useSignupStoreWebauthn = defineStore('signup-webauthn', () => {
 
   async function handleSignupWA() {
     if (validate) {
-      const fetchedChallenge = ref(await generateChallenge());
+      const fetchedChallenge = await generateChallenge();
       challenge.value = fetchedChallenge;
+
+      const registration = await client.register(
+        username.value,
+        challenge.value, {
+          authenticatorType: "extern",
+          userVerification: "required",
+          timeout: 60000,
+          attestation: true,
+          debug: false
+        }
+      )
+
+      console.debug(registration)
       const payload = {
         username: username.value,
         challenge: challenge.value,
@@ -43,7 +57,7 @@ export const useSignupStoreWebauthn = defineStore('signup-webauthn', () => {
         .then((res) => {
           if (res.data.status === true) {
             isValid.value = true;
-            router.push('/login');
+            router.push('/login-webauthn');
         }
         })
         .catch(err => {

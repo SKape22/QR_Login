@@ -54,7 +54,6 @@ export const useLoginStore = defineStore('login', () => {
   const isLogin = ref(!!storedUserData.username);
   const is2faEnabled = ref(!!storedUserData.is2faEnabled);
   
-  console.log(is2faEnabled)
   async function handleLogin() {
     const payload = {
       username: username.value,
