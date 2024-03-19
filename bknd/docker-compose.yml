@@ -7,6 +7,7 @@ services:
       POSTGRES_USER: your_username
       POSTGRES_PASSWORD: your_password
       POSTGRES_DB: userdb
+      LANG: C.UTF-8
     ports:
       - "5433:5432"
     volumes: 

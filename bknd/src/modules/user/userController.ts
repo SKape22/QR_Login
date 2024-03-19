@@ -1,7 +1,8 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { CreateUserInput, Enable2FAInput, LoginUserInput, Verify2FA, CreateUserWauthnInput } from "./userSchema";
+import { CreateUserInput, Enable2FAInput, LoginUserInput, Verify2FA, CreateUserWauthnInput, ChallengeInput } from "./userSchema";
 import bcrypt from 'bcrypt'
 import { Pool } from 'pg'
+import { table } from "console";
 // import { utils } from "@passwordless-id/webauthn";
 const someModule = import("@passwordless-id/webauthn");
 // import * as webauthn from '@passwordless-id/webauthn' 
@@ -19,12 +20,72 @@ const pool = new Pool({
 
 const SALT_ROUNDS = 10;
 
+async function tableExists(tableName: string): Promise<boolean> {
+  try {
+    const connection = await pool.connect();
+    const result = await connection.query(`
+      SELECT EXISTS (
+        SELECT * FROM information_schema.tables
+        WHERE table_name = $1
+      ) AS exists;
+    `, [tableName]);
+
+    connection.release();
+    return result.rows[0].exists;
+  } catch (err) {
+    console.error('Error checking table existence:', err);
+    return false; // Handle potential errors gracefully
+  }
+}
+
+async function createUsersTable() {
+  try {
+    const connection = await pool.connect();
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        webauthn BOOLEAN NOT NULL DEFAULT FALSE
+        credentialKey JSONB DEFAULT NULL
+      );
+    `;
+    await connection.query(createTableQuery);
+    connection.release();
+  } catch (err) {
+    console.error('Error creating users table:', err);
+  }
+}
+
+async function createChallengeTable() {
+  try {
+    const connection = await pool.connect();
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS challenge (
+        id SERIAL PRIMARY KEY,
+        sessionID VARCHAR(255) UNIQUE NOT NULL,
+        challenge VARCHAR(255) NOT NULL,
+      );
+    `;
+    await connection.query(createTableQuery);
+    connection.release();
+  } catch (err) {
+    console.error('Error creating challenge table:', err);
+  }
+}
+
 export async function createUser(
   req: FastifyRequest<{Body: CreateUserInput}>, reply: FastifyReply) {
     console.log(req.body);
     const {password, email, username} = req.body;  
   
     try {
+      
+      if (!(await tableExists('users'))) {
+        await createUsersTable();
+      }
+
       const connection = await pool.connect();
 
       const usernameResult = await connection.query(
@@ -110,14 +171,29 @@ export async function logout(req: FastifyRequest, reply: FastifyReply) {
   return reply.send({ message: 'Logout successful' })
 }
 
-export async function generateChallenge(req: FastifyRequest, reply: FastifyReply) {
-  try {
-    const challenge = (await someModule).utils.randomChallenge()
-    reply.code(200).send(challenge)
-  } catch(err) {
-    return reply.code(500).send(err);
+export async function generateChallenge(
+  req: FastifyRequest<{Body: ChallengeInput}>, reply: FastifyReply) {
+    const { sessionID } = req.body
+    try {
+      if (!(await tableExists('challenge'))) {
+        await createChallengeTable();
+      }
+
+      const challenge = (await someModule).utils.randomChallenge()
+
+      const connection = await pool.connect();
+
+      const result = await connection.query(
+        'INSERT INTO users (sessionID, challenge) values ($1,$2);',
+        [`${sessionID}`, `${challenge}`]
+      )  
+      connection.release();
+
+      reply.code(200).send(challenge)
+    } catch(err) {
+      return reply.code(500).send(err);
+    }
   }
-}
 
 export async function enable2fa(
   req: FastifyRequest<{Body: Enable2FAInput}>, reply: FastifyReply) {
@@ -214,11 +290,14 @@ export async function verify2fa(
 
 export async function createUserWebauthn(
   req: FastifyRequest<{Body: CreateUserWauthnInput}>, reply: FastifyReply) {
-    console.log(req.body);
-    const {password, email, username, challenge} = req.body;  
-  
+    const {password, email, username, challenge, sessionID} = req.body;  
+
     try {
-      // const connection = await pool.connect();
+      const connection = await pool.connect();
+
+      // TO ADD: get challenge based on the {sessionID, challenge} row from sesions table andverify the challenge string, return error if unsuccessful
+
+      // inplement server.verify
 
       // const usernameResult = await connection.query(
       //   'SELECT * FROM users WHERE username = $1',
@@ -238,15 +317,15 @@ export async function createUserWebauthn(
       //   return reply.status(400).send({ message: 'Email already exists' });
       // }
     
-      // const hash = await bcrypt.hash(password, SALT_ROUNDS)
+      const hash = await bcrypt.hash(password, SALT_ROUNDS)
 
-      // const result = await connection.query(
-      //   'INSERT INTO users (username, email, password) values ($1,$2,$3);',
-      //   [`${username}`, `${email}`, `${hash}`]
-      // )  
-      // connection.release();
+      const result = await connection.query(
+        'INSERT INTO users (username, email, password) values ($1,$2,$3);',
+        [`${username}`, `${email}`, `${hash}`]
+      )  
+      connection.release();
 
-      console.log(challenge)
+      // console.log(challenge)
       return reply.code(201).send({status: true , message: {'Challenge: ': challenge}});
       // return reply.code(201).send(challenge);
       

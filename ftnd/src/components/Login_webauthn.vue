@@ -23,11 +23,10 @@
   </template>
   
   <script setup>
-  import { useLoginStore } from '@/stores/Auth';
+  import { useLoginStoreWebauthn } from '@/stores/Webauthn';
   import { RouterLink } from 'vue-router';
   
-  const Login = useLoginStore();
-  
+  const Login = useLoginStoreWebauthn();
   </script>
   
   

@@ -1,9 +1,10 @@
 import { FastifyInstance} from 'fastify'
 import { createUser, login, logout, enable2fa, verify2fa, generateChallenge, createUserWebauthn, loginWebauthn,  } from './userController'
-import { CreateUserInput, LoginUserInput, Enable2FAInput, Verify2FA, CreateUserWauthnInput } from './userSchema'
+import { CreateUserInput, LoginUserInput, Enable2FAInput, Verify2FA, CreateUserWauthnInput, ChallengeInput } from './userSchema'
 
 export async function userRoutes(app: FastifyInstance) {
-  app.get('/challenge', generateChallenge)
+
+  app.post<{ Body: ChallengeInput}>('/challenge', generateChallenge)
 
   // app.get('/', (req: FastifyRequest, reply: FastifyReply) => {
   //   reply.send({ message: '/ route hit   Hello there! 👋' })

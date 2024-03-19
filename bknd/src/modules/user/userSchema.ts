@@ -11,7 +11,8 @@ const createUserWauthnSchema = z.object({
   email: z.string(),
   password: z.string().min(6),
   username: z.string(),
-  challenge: z.string()
+  challenge: z.string(),
+  sessionID: z.string()
 })
 
 export type CreateUserInput = z.infer<typeof createUserSchema>
@@ -33,11 +34,30 @@ const loginSchema = z.object({
   password: z.string().min(6),
 })
 
+const loginWauthSchema = z.object({
+  username: z
+    .string({
+      required_error: 'Username is required',
+      invalid_type_error: 'Username must be a string',
+    }),
+    password: z.string().min(6),
+    challenge: z.string(),
+    sessionID: z.string()
+})
+
 export type LoginUserInput = z.infer<typeof loginSchema>
+
+export type LoginWauthInput = z.infer<typeof loginWauthSchema>
 
 const loginResponseSchema = z.object({
   accessToken: z.string(),
 })
+
+const challengeSchema = z.object({
+  sessionID: z.string()
+}) 
+
+export type ChallengeInput = z.infer<typeof challengeSchema>
 
 const enable2faSchema = z.object({
   username: z.string()
@@ -61,7 +81,9 @@ export const { schemas: userSchemas, $ref } = buildJsonSchemas({
   createUserSchema,
   createUserResponseSchema,
   loginSchema,
+  loginWauthSchema,
   loginResponseSchema,
+  challengeSchema,
   enable2faSchema,
   responseSchema2FA,
   verify2faSchema
