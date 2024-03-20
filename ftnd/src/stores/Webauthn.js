@@ -18,6 +18,15 @@ async function generateSession() {
   return uuidv4();
 }
 
+async function getCredentialID(username) {
+  try {
+    const response = await axios.post('http://localhost:3000/api/v1/users/credential', {username});
+    return response.data;
+  } catch (err) {
+    console.error('Error fetching challenge:', err);
+  }
+}
+
 export const useSignupStoreWebauthn = defineStore('signup-webauthn', () => {
   const username = ref('');
   const email = ref('');
@@ -55,17 +64,21 @@ export const useSignupStoreWebauthn = defineStore('signup-webauthn', () => {
       )
       
       console.log(registration)
+      console.log("challenege", challenge.value);
       
       const payload = {
         username: username.value,
         challenge: challenge.value,
         email: email.value,
         password: password.value,
+        sessionID: session.value,
+        registration: registration,
       }
 
       await axios
         .post('http://localhost:3000/api/v1/users/signup-webauthn', payload)
         .then((res) => {
+          console.log("result" , res)
           if (res.data.status === true) {
             isValid.value = true;
             router.push('/login-webauthn');
@@ -94,12 +107,16 @@ export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
   
   // console.log(is2faEnabled)
   async function handleLogin() {
-    const fetchedChallenge = await generateChallenge();
-    challenge.value = fetchedChallenge;
+    const fetchedSession = await generateSession();
+    const fetchedChallenge = await generateChallenge(fetchedSession);
+
+    const credential = await getCredentialID(username.value);
+
+    console.log(credential);
 
     let auth = await client.authenticate(
-      [username.value] ,
-      challenge.value, {
+      [credential] ,
+      fetchedChallenge, {
       authenticatorType: 'roaming',
       // userVerification: 'required,'
       timeout: 60000,
@@ -110,37 +127,27 @@ export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
     const payload = {
       username: username.value,
       challenge: challenge.value,
-      password: password.value
+      password: password.value,
+      authentication: auth,
+      sessionID: fetchedSession,
     }
 
-    // await axios
-    //   .post('http://localhost:3000/api/v1/users/login', payload)
-    //   .then((res) => {
-    //     console.log(res)
-    //     console.log(res.data.accessToken);
-    //     if (res.data.status) {
-    //       const user = {
-    //         username: username.value,
-    //         accessToken: res.data.accessToken,
-    //         is2faEnabled: res.data.is_2fa_enabled
-    //       }
-    //       localStorage.setItem('QR-Login_user', JSON.stringify(user))
-    //       isLogin.value = true;
+    await axios
+    .post('http://localhost:3000/api/v1/users/login-webauthn', payload)
+    .then((res) => {
+      if (res.data.status === true) {
+        // isValid.value = true;
+        router.push('/success');
+    }
+    })
+    .catch(err => {
+      console.error('Error:', err)
+    })
 
-    //       username.value = '';
-    //       password.value = '';
-    //       is2faEnabled.value = !!storedUserData.is2faEnabled;
-    //       console.log(res.data)
-    //       if (res.data.is_2fa_enabled)
-    //         router.push('/verify2FA');
 
-    //       else
-    //         router.push('/enable2FA');
-    //     }
-    //   })
-    //   .catch(err => {
-    //     console.error('Error:', err)
-    //   })
+
+
+  
     } 
     
   async function handleLogout() {
@@ -148,72 +155,9 @@ export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
     const accessToken = login_user.value.accessToken;
     const header = {'Authorization': `Bearer ${accessToken}`};
     
-    // try {
-    //   await axios.delete('http://localhost:3000/api/v1/users/logout', {headers: header})
-    //   console.log('Logout Successful');
-    //   localStorage.removeItem('QR-Login_user');
-    //   router.push('/');
-    //   isLogin.value = false;
-    // } catch(err) {
-    //   console.error('Error',err);
-    // }
+   
   }
     
   return { username, password, isLogin, is2faEnabled, challenge, handleLogin, handleLogout }
 })
 
-// export const use2faStore = defineStore('2FA', () => {
-//   const code = ref('');
-//   const qrCode = ref('');
-  
-//   async function enable2FA() {
-//     const login_user = ref(JSON.parse(localStorage.getItem('QR-Login_user')));
-//     const accessToken = login_user.value.accessToken;
-//     const username = login_user.value.username;
-    
-//     const payload = {
-//       username: username
-//     }
-
-//     const header = {'Authorization': `Bearer ${accessToken}`};
-
-//     await axios
-//       .post('http://localhost:3000/api/v1/users/enable2FA', payload, {headers: header})
-//       .then((res) => {
-//         console.log(res)
-//         if (res.data.status) {
-//           qrCode.value = res.data.qr;
-//           router.push('/verify2FA')
-//         }
-//       })
-//       .catch(err => {
-//         console.error('Error:', err)
-//       })
-//     }
-
-//     async function verify2FA() {
-//       const login_user = ref(JSON.parse(localStorage.getItem('QR-Login_user')));
-//       const accessToken = login_user.value.accessToken;
-//       const username = login_user.value.username;
-      
-//       const payload = {
-//         username: username,
-//         code: code.value
-//       }
-//       const header = {'Authorization': `Bearer ${accessToken}`};
-
-//       await axios
-//       .post('http://localhost:3000/api/v1/users/verify2FA', payload, {headers: header})
-//       .then((res) => {
-//         console.log(res)
-//         if (res.data.status) {
-//           router.push('/')
-//         }
-//       })
-//       .catch(err => {
-//         console.error('Error:', err)
-//       })
-//     }
-
-//     return { code, qrCode, enable2FA, verify2FA }
-// })

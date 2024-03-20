@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { CreateUserInput, Enable2FAInput, LoginUserInput, Verify2FA, CreateUserWauthnInput, ChallengeInput } from "./userSchema";
+import { CreateUserInput, Enable2FAInput, LoginUserInput, LoginWauthInput ,Verify2FA, CreateUserWauthnInput, ChallengeInput ,CredentialInput} from "./userSchema";
 import bcrypt from 'bcrypt'
 import { Pool } from 'pg'
 import { table } from "console";
@@ -47,7 +47,7 @@ async function createUsersTable() {
         username VARCHAR(255) UNIQUE NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        webauthn BOOLEAN NOT NULL DEFAULT FALSE
+        webauthn BOOLEAN NOT NULL DEFAULT FALSE,
         credentialKey JSONB DEFAULT NULL
       );
     `;
@@ -65,7 +65,7 @@ async function createChallengeTable() {
       CREATE TABLE IF NOT EXISTS challenge (
         id SERIAL PRIMARY KEY,
         sessionID VARCHAR(255) UNIQUE NOT NULL,
-        challenge VARCHAR(255) NOT NULL,
+        challenge VARCHAR(255) NOT NULL
       );
     `;
     await connection.query(createTableQuery);
@@ -184,7 +184,7 @@ export async function generateChallenge(
       const connection = await pool.connect();
 
       const result = await connection.query(
-        'INSERT INTO users (sessionID, challenge) values ($1,$2);',
+        'INSERT INTO challenge (sessionID, challenge) values ($1,$2);',
         [`${sessionID}`, `${challenge}`]
       )  
       connection.release();
@@ -194,6 +194,27 @@ export async function generateChallenge(
       return reply.code(500).send(err);
     }
   }
+
+export async function findCredential(req: FastifyRequest<{Body: CredentialInput}>, reply: FastifyReply){
+  const { username } = req.body
+  try {
+
+
+    const connection = await pool.connect();
+
+    const credentialKey = await connection.query(
+      'SELECT credentialKey FROM users WHERE username = $1',
+      [username]
+    );
+    connection.release();
+    console.log("credentialKey", credentialKey);
+    const parsedCredential = credentialKey.rows[0].credentialkey;
+    console.log(parsedCredential);
+    reply.code(200).send(parsedCredential.id);
+  } catch(err) {
+    return reply.code(500).send(err);
+  }
+}
 
 export async function enable2fa(
   req: FastifyRequest<{Body: Enable2FAInput}>, reply: FastifyReply) {
@@ -290,9 +311,13 @@ export async function verify2fa(
 
 export async function createUserWebauthn(
   req: FastifyRequest<{Body: CreateUserWauthnInput}>, reply: FastifyReply) {
-    const {password, email, username, challenge, sessionID} = req.body;  
+    const {password, email, username, challenge, sessionID, registration} = req.body;  
 
     try {
+
+      if (!(await tableExists('users'))) {
+        await createUsersTable();
+      }
       const connection = await pool.connect();
 
       // TO ADD: get challenge based on the {sessionID, challenge} row from sesions table andverify the challenge string, return error if unsuccessful
@@ -317,11 +342,27 @@ export async function createUserWebauthn(
       //   return reply.status(400).send({ message: 'Email already exists' });
       // }
     
-      const hash = await bcrypt.hash(password, SALT_ROUNDS)
+      const hash = await bcrypt.hash(password, SALT_ROUNDS);
 
+      const challenge_user = await connection.query(
+        'SELECT challenge FROM challenge WHERE sessionID = $1',
+        [sessionID]
+      );
+
+      console.log("challenge_user", challenge_user.rows[0].challenge);
+      console.log("challenege", challenge);
+      console.log("registration", registration);
+      const expected = {
+        challenge: challenge_user.rows[0].challenge,
+        origin: "http://localhost:5173"
+      }
+
+      const registrationParsed = await (await someModule).server.verifyRegistration(registration, expected);
+      console.log("parsedRegistration",registrationParsed);
+      const credentialJSON = JSON.stringify(registrationParsed.credential);
       const result = await connection.query(
-        'INSERT INTO users (username, email, password) values ($1,$2,$3);',
-        [`${username}`, `${email}`, `${hash}`]
+        'INSERT INTO users (username, email, password, webauthn, credentialKey) values ($1,$2,$3,$4,$5);',
+        [`${username}`, `${email}`, `${hash}`,`${true}`,`${credentialJSON}`]
       )  
       connection.release();
 
@@ -335,9 +376,9 @@ export async function createUserWebauthn(
   }
 
   export async function loginWebauthn(
-    req: FastifyRequest<{Body: LoginUserInput}>, reply: FastifyReply) {
+    req: FastifyRequest<{Body: LoginWauthInput}>, reply: FastifyReply) {
 
-    const { username, password } = req.body;
+    const { username, password, authentication, sessionID, challenge } = req.body;
     try {
       const connection = await pool.connect();
       
@@ -347,7 +388,7 @@ export async function createUserWebauthn(
       );
 
       const passwordMatch = user && (await bcrypt.compare(password, user.rows[0].password));
-      
+        
 
 
       if (!user || !passwordMatch) {
@@ -355,23 +396,28 @@ export async function createUserWebauthn(
         return reply.code(401).send({ message: 'Invalid username or password' });
       }
 
+      const challenge_user = await connection.query(
+        'SELECT challenge FROM challenge WHERE sessionID = $1',
+        [sessionID]
+      );
+
+      console.log("challenge from login sessionID ", challenge_user)
+
       connection.release()
 
-      const payload = {
-        id: user.rows[0].id,
-        email: user.rows[0].email,
-        username: user.rows[0].username
-      }
+      const expected = {
+        challenge: challenge_user.rows[0].challenge, // whatever was randomly generated by the server.
+        origin: "http://localhost:5173",
+        userVerified: true, // should be set if `userVerification` was set to `required` in the authentication options (default)
+       // Optional. For device-bound credentials, you should verify the authenticator "usage" counter increased since last time.
+    }
 
-      const token = req.jwt.sign(payload)
+    const authenticationParsed = await  (await someModule).server.verifyAuthentication(authentication, user.rows[0].credentialkey, expected)
 
-      reply.setCookie('access_token', token, {
-        path: '/',
-        httpOnly: true,
-        secure: true,
-      })
+      console.log("authenticationParsed", authenticationParsed);
 
-      return reply.code(201).send({accessToken: token, status: true, is_2fa_enabled: user.rows[0].is_2fa_enabled , message: 'Login Successful'});
+
+      return reply.code(201).send({status: true, authentication: authenticationParsed , message: 'Login Successful'});
 
     } catch(err) {
       return reply.code(500).send(err);

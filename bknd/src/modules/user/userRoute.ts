@@ -1,10 +1,12 @@
 import { FastifyInstance} from 'fastify'
-import { createUser, login, logout, enable2fa, verify2fa, generateChallenge, createUserWebauthn, loginWebauthn,  } from './userController'
-import { CreateUserInput, LoginUserInput, Enable2FAInput, Verify2FA, CreateUserWauthnInput, ChallengeInput } from './userSchema'
+import { createUser, login, logout, enable2fa, verify2fa, generateChallenge, createUserWebauthn, loginWebauthn, findCredential  } from './userController'
+import { CreateUserInput, LoginUserInput, Enable2FAInput, Verify2FA, CreateUserWauthnInput, ChallengeInput , CredentialInput, LoginWauthInput } from './userSchema'
 
 export async function userRoutes(app: FastifyInstance) {
 
   app.post<{ Body: ChallengeInput}>('/challenge', generateChallenge)
+
+  app.post<{ Body: CredentialInput}>('/credential', findCredential)
 
   // app.get('/', (req: FastifyRequest, reply: FastifyReply) => {
   //   reply.send({ message: '/ route hit   Hello there! 👋' })
@@ -22,7 +24,7 @@ export async function userRoutes(app: FastifyInstance) {
 
   app.post<{ Body: CreateUserWauthnInput, }>('/signup-webauthn', createUserWebauthn);
 
-  app.post<{ Body: LoginUserInput }>('/login-webauthn', loginWebauthn);
+  app.post<{ Body: LoginWauthInput }>('/login-webauthn', loginWebauthn);
 
   app.log.info('user routes registered');
 }

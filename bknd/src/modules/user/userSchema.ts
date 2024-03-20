@@ -12,7 +12,17 @@ const createUserWauthnSchema = z.object({
   password: z.string().min(6),
   username: z.string(),
   challenge: z.string(),
-  sessionID: z.string()
+  sessionID: z.string(),
+  registration: z.object({
+    username: z.string(),
+    credential: z.object({
+      id: z.string(),
+      publicKey: z.string(),
+      algorithm: z.enum(["RS256", "ES256"]) // Specify the allowed values for algorithm
+    }),
+    authenticatorData: z.string(),
+    clientData: z.string()
+  })
 })
 
 export type CreateUserInput = z.infer<typeof createUserSchema>
@@ -42,7 +52,14 @@ const loginWauthSchema = z.object({
     }),
     password: z.string().min(6),
     challenge: z.string(),
-    sessionID: z.string()
+    sessionID: z.string(),
+    authentication: z.object({
+      credentialId: z.string(),
+      authenticatorData: z.string(),
+      clientData: z.string(),
+      signature: z.string(),
+    })
+
 })
 
 export type LoginUserInput = z.infer<typeof loginSchema>
@@ -56,6 +73,12 @@ const loginResponseSchema = z.object({
 const challengeSchema = z.object({
   sessionID: z.string()
 }) 
+
+const credentialSchema = z.object({
+  username: z.string()
+})
+
+export type CredentialInput = z.infer<typeof credentialSchema>
 
 export type ChallengeInput = z.infer<typeof challengeSchema>
 
