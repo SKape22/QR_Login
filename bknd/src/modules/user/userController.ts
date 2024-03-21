@@ -2,78 +2,21 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { CreateUserInput, Enable2FAInput, LoginUserInput, LoginWauthInput ,Verify2FA, CreateUserWauthnInput, ChallengeInput ,CredentialInput} from "./userSchema";
 import bcrypt from 'bcrypt'
 import { Pool } from 'pg'
-import { table } from "console";
-// import { utils } from "@passwordless-id/webauthn";
-const someModule = import("@passwordless-id/webauthn");
-// import * as webauthn from '@passwordless-id/webauthn' 
+import { tableExists, createChallengeTable, createUsersTable } from "../../utils/tableCheck";
+const webauthnModule = import("@passwordless-id/webauthn");
 
 const speakeasy = require('speakeasy')
 const qrcode = require('qrcode')
 
 const pool = new Pool({
-    user: 'your_username',
-    host: 'localhost',
-    database: 'userdb',
-    password: 'your_password',
-    port: 5433,
+  user: 'your_username',
+  host: 'localhost',
+  database: 'userdb',
+  password: 'your_password',
+  port: 5433,
 })
 
 const SALT_ROUNDS = 10;
-
-async function tableExists(tableName: string): Promise<boolean> {
-  try {
-    const connection = await pool.connect();
-    const result = await connection.query(`
-      SELECT EXISTS (
-        SELECT * FROM information_schema.tables
-        WHERE table_name = $1
-      ) AS exists;
-    `, [tableName]);
-
-    connection.release();
-    return result.rows[0].exists;
-  } catch (err) {
-    console.error('Error checking table existence:', err);
-    return false; // Handle potential errors gracefully
-  }
-}
-
-async function createUsersTable() {
-  try {
-    const connection = await pool.connect();
-    const createTableQuery = `
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(255) UNIQUE NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        webauthn BOOLEAN NOT NULL DEFAULT FALSE,
-        credentialKey JSONB DEFAULT NULL
-      );
-    `;
-    await connection.query(createTableQuery);
-    connection.release();
-  } catch (err) {
-    console.error('Error creating users table:', err);
-  }
-}
-
-async function createChallengeTable() {
-  try {
-    const connection = await pool.connect();
-    const createTableQuery = `
-      CREATE TABLE IF NOT EXISTS challenge (
-        id SERIAL PRIMARY KEY,
-        sessionID VARCHAR(255) UNIQUE NOT NULL,
-        challenge VARCHAR(255) NOT NULL
-      );
-    `;
-    await connection.query(createTableQuery);
-    connection.release();
-  } catch (err) {
-    console.error('Error creating challenge table:', err);
-  }
-}
 
 export async function createUser(
   req: FastifyRequest<{Body: CreateUserInput}>, reply: FastifyReply) {
@@ -179,7 +122,7 @@ export async function generateChallenge(
         await createChallengeTable();
       }
 
-      const challenge = (await someModule).utils.randomChallenge()
+      const challenge = (await webauthnModule).utils.randomChallenge()
 
       const connection = await pool.connect();
 
@@ -357,7 +300,7 @@ export async function createUserWebauthn(
         origin: "http://localhost:5173"
       }
 
-      const registrationParsed = await (await someModule).server.verifyRegistration(registration, expected);
+      const registrationParsed = await (await webauthnModule).server.verifyRegistration(registration, expected);
       console.log("parsedRegistration",registrationParsed);
       const credentialJSON = JSON.stringify(registrationParsed.credential);
       const result = await connection.query(
@@ -412,10 +355,15 @@ export async function createUserWebauthn(
        // Optional. For device-bound credentials, you should verify the authenticator "usage" counter increased since last time.
     }
 
-    const authenticationParsed = await  (await someModule).server.verifyAuthentication(authentication, user.rows[0].credentialkey, expected)
+    const authenticationParsed = await  (await webauthnModule).server.verifyAuthentication(authentication, user.rows[0].credentialkey, expected)
 
       console.log("authenticationParsed", authenticationParsed);
 
+      reply.setCookie('access_token', authenticationParsed.signature, {
+        path:'/',
+        httpOnly: true,
+        secure: true,
+      })
 
       return reply.code(201).send({status: true, authentication: authenticationParsed , message: 'Login Successful'});
 

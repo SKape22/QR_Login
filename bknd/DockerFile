@@ -1,0 +1,14 @@
+FROM node:latest
+
+WORKDIR /user/src/app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN echo "* * * * * node /app/utils/deleteExpiredChallenges.js" > crontab.txt
+COPY crontab.txt /etc/cron.d/delete_challenges
+
+CMD ["cron", "-f"]

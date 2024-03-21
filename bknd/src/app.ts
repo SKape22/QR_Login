@@ -5,6 +5,8 @@ import { userRoutes } from './modules/user/userRoute';
 import { userSchemas } from './modules/user/userSchema';
 import fjwt, { FastifyJWT } from '@fastify/jwt'
 import fCookie from '@fastify/cookie'
+import { CronJob } from 'cron';
+import deleteExpiredChallenges from './utils/schedule';
 import './utils/types'
 
 const app: FastifyInstance = fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>()
@@ -102,6 +104,15 @@ app.decorate('authenticate', async (req: FastifyRequest, reply: FastifyReply) =>
 //   }
 // }
 // )
+
+// const job = new CronJob(
+//           '*/5 * * * *', 
+//           function() {
+//             deleteExpiredChallenges();
+//           },
+//           null,
+//           true
+//           );
 
 
 const PORT = '3000'
