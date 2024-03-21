@@ -359,13 +359,13 @@ export async function createUserWebauthn(
 
       console.log("authenticationParsed", authenticationParsed);
 
-      reply.setCookie('access_token', authenticationParsed.signature, {
-        path:'/',
-        httpOnly: true,
-        secure: true,
-      })
+      // reply.setCookie('access_token', authenticationParsed.signature, {
+      //   path:'/',
+      //   httpOnly: true,
+      //   secure: true,
+      // })
 
-      return reply.code(201).send({status: true, authentication: authenticationParsed , message: 'Login Successful'});
+      return reply.code(201).send({status: true, user: username, access_token: authenticationParsed.signature , message: 'Login Successful'});
 
     } catch(err) {
       return reply.code(500).send(err);

@@ -45,12 +45,12 @@ app.decorate('authenticate', async (req: FastifyRequest, reply: FastifyReply) =>
     if (bearer === 'Bearer' && tokenFromHeader)
       token = tokenFromHeader;
   }
-
   if (!token) {
     return reply.status(401).send({ message: 'Authentication required' })
   }
-  const decoded = req.jwt.verify<FastifyJWT['user']>(token)
-  req.user = decoded
+  console.log(token);
+  // const decoded = req.jwt.verify<FastifyJWT['user']>(token)
+  // req.user = decoded
 })
 // app.register(userRoutes, {prefix: "api/v1/users"})
 
@@ -105,14 +105,14 @@ app.decorate('authenticate', async (req: FastifyRequest, reply: FastifyReply) =>
 // }
 // )
 
-// const job = new CronJob(
-//           '*/5 * * * *', 
-//           function() {
-//             deleteExpiredChallenges();
-//           },
-//           null,
-//           true
-//           );
+const job = new CronJob(
+          '*/5 * * * *', 
+          function() {
+            deleteExpiredChallenges();
+          },
+          null,
+          true
+          );
 
 
 const PORT = '3000'

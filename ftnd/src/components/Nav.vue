@@ -13,9 +13,9 @@
  
 <script setup>
   import { RouterLink } from 'vue-router';
-  import { useLoginStore } from '@/stores/Auth';
+  import { useLoginStoreWebauthn } from '@/stores/Webauthn';
 
-  const Login = useLoginStore();
+  const Login = useLoginStoreWebauthn();
   // const reRenderFlag = ref(0);
   // const login_user = ref(JSON.parse(localStorage.getItem('QR-Login_user')));
   // const isLoggedIn = ref(!!login_user.value);

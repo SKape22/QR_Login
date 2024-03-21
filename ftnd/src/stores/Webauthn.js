@@ -103,7 +103,6 @@ export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
   const isLogin = ref(!!storedUserData.username);
   const challenge = ref(null)
 
-  const is2faEnabled = ref(!!storedUserData.is2faEnabled);
   
   // console.log(is2faEnabled)
   async function handleLogin() {
@@ -112,7 +111,7 @@ export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
 
     const credential = await getCredentialID(username.value);
 
-    console.log(credential);
+    // console.log(credential);
 
     let auth = await client.authenticate(
       [credential] ,
@@ -122,7 +121,7 @@ export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
       timeout: 60000,
     })
 
-    console.log(auth)
+    // console.log(auth)
 
     const payload = {
       username: username.value,
@@ -136,7 +135,17 @@ export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
     .post('http://localhost:3000/api/v1/users/login-webauthn', payload)
     .then((res) => {
       if (res.data.status === true) {
+        console.log(res.data);
+        const user = {
+          username: res.data.user,
+          accessToken: res.data.access_token
+        }
+        localStorage.setItem('QR-Login_user', JSON.stringify(user))
         // isValid.value = true;
+        isLogin.value = true;
+
+        username.value = '';
+        password.value = '';
         router.push('/success');
     }
     })
@@ -155,9 +164,17 @@ export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
     const accessToken = login_user.value.accessToken;
     const header = {'Authorization': `Bearer ${accessToken}`};
     
-   
+    try {
+      await axios.delete('http://localhost:3000/api/v1/users/logout', {headers: header})
+      console.log('Logout Successful');
+      localStorage.removeItem('QR-Login_user');
+      router.push('/');
+      isLogin.value = false;
+    } catch (err) {
+      console.error('Error',err);
+    }
   }
     
-  return { username, password, isLogin, is2faEnabled, challenge, handleLogin, handleLogout }
+  return { username, password, isLogin, challenge, handleLogin, handleLogout }
 })
 
