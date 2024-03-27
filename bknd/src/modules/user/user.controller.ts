@@ -3,6 +3,7 @@ import { CreateUserInput, Enable2FAInput, LoginUserInput, Verify2FA } from "./us
 import bcrypt from 'bcrypt'
 import { Pool } from 'pg'
 import { tableExists, createUsersTable } from "../../utils/tableCheck";
+import { invalidateSession, isSessionActive } from "../../utils/session";
 
 const speakeasy = require('speakeasy')
 const qrcode = require('qrcode')
@@ -88,7 +89,10 @@ export async function login(
         return reply.code(401).send({ message: 'Invalid username or password' });
       }
 
-      connection.release()
+      const isActive = await isSessionActive(req.body.username)
+      if (isActive) {
+        await invalidateSession(req.body.username);
+      }
 
       const payload = {
         email: user.rows[0].email,
@@ -96,6 +100,9 @@ export async function login(
       }
 
       const token = req.jwt.sign(payload)
+
+      await connection.query('INSERT INTO session (username, accessToken) VALUES ($1, $2)', [req.body.username, token]);
+      connection.release()
 
       reply.setCookie('access_token', token, {
         path: '/',

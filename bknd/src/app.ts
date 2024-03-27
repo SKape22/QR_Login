@@ -6,6 +6,7 @@ import { userSchemas } from './modules/user/user.schema';
 import fjwt, { FastifyJWT } from '@fastify/jwt'
 import fCookie from '@fastify/cookie'
 import './utils/types'
+import { isSessionActive } from './utils/session';
 
 const app: FastifyInstance = fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>()
 
@@ -37,12 +38,12 @@ app.register(fCookie, {
 app.decorate('authenticate', async (req: FastifyRequest, reply: FastifyReply) => {
   let token = req.cookies.access_token || ""
 
-  if (!token && req.headers.authorization) {
-    const authHeader = req.headers.authorization;
-    const [bearer, tokenFromHeader] = authHeader.split(' ');
-    if (bearer === 'Bearer' && tokenFromHeader)
-      token = tokenFromHeader;
-  }
+  // if (!token && req.headers.authorization) {
+  //   const authHeader = req.headers.authorization;
+  //   const [bearer, tokenFromHeader] = authHeader.split(' ');
+  //   if (bearer === 'Bearer' && tokenFromHeader)
+  //     token = tokenFromHeader;
+  // }
 
   if (!token) {
     return reply.status(401).send({ message: 'Authentication required' })
@@ -50,6 +51,11 @@ app.decorate('authenticate', async (req: FastifyRequest, reply: FastifyReply) =>
   const decoded = req.jwt.verify<FastifyJWT['user']>(token)
   console.log("\n\n",decoded,"\n\n")
   req.user = decoded
+
+  const isActive = await isSessionActive(decoded.username)
+  if (!isActive) {
+    return reply.status(401).send({ message: 'Session expired or invalid'})
+  }
 })
 
 const PORT = '3000'
