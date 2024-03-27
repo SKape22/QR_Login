@@ -91,7 +91,7 @@ export async function login(
 
       const isActive = await isSessionActive(req.body.username)
       if (isActive) {
-        await invalidateSession(req.body.username);
+        return reply.code(402).send({ message: "Login failed: Session already exists"})
       }
 
       const payload = {
