@@ -3,8 +3,8 @@
         <nav class="border-gray-300 text-gray-200 flex flex-row justify-between bg-slate-500 px-2 py-2.5 sm:px-4">
           <RouterLink class="hover:text-white" to="/">Home</RouterLink>
           <div v-if="!(Login.isLogin)" class="flex gap-5 flex-row">
-            <RouterLink class="hover:text-white" to="/login">Login</RouterLink>
-            <RouterLink class="hover:text-white" to="/signup">Signup</RouterLink>
+            <RouterLink class="hover:text-white" to="/login-webauthn">Login</RouterLink>
+            <RouterLink class="hover:text-white" to="/signup-webauthn">Signup</RouterLink>
           </div>
           <button v-else @click="Login.handleLogout">LogOut</button>
         </nav>

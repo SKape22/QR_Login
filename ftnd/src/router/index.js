@@ -13,26 +13,26 @@ const router = createRouter({
       name: 'success',
       component: () => import("../components/LoginSuccess.vue")
     },
-    {
-      path: '/login',
-      name: 'login',
-      component: () => import("../components/Login.vue")
-    },
-    {
-      path: '/signup',
-      name: 'Signup',
-      component: () => import("../components/Signup.vue")
-    },
-    {
-      path: '/enable2FA',
-      name: 'Enable 2-Factor Authentication',
-      component: () => import("../components/2FA.vue") 
-    },
-    {
-      path: '/verify2FA',
-      name: 'Verify 2-Factor Authentication',
-      component: () => import ("../components/verify2FA.vue")
-    },
+    // {
+    //   path: '/login',
+    //   name: 'login',
+    //   component: () => import("../components/Login.vue")
+    // },
+    // {
+    //   path: '/signup',
+    //   name: 'Signup',
+    //   component: () => import("../components/Signup.vue")
+    // },
+    // {
+    //   path: '/enable2FA',
+    //   name: 'Enable 2-Factor Authentication',
+    //   component: () => import("../components/2FA.vue") 
+    // },
+    // {
+    //   path: '/verify2FA',
+    //   name: 'Verify 2-Factor Authentication',
+    //   component: () => import ("../components/verify2FA.vue")
+    // },
     {
       path: '/login-webauthn',
       name: 'login using webauthn',
