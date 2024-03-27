@@ -3,6 +3,7 @@ import { CreateUserInput, Enable2FAInput, LoginUserInput, LoginWauthInput ,Verif
 import bcrypt from 'bcrypt'
 import { Pool } from 'pg'
 import { tableExists, createChallengeTable, createUsersTable } from "../../utils/tableCheck";
+import { invalidateSession, isSessionActive } from "../../utils/session";
 const webauthnModule = import("@passwordless-id/webauthn");
 
 const speakeasy = require('speakeasy')
@@ -110,6 +111,7 @@ export async function login(
   }
 
 export async function logout(req: FastifyRequest, reply: FastifyReply) {
+  await invalidateSession(req.user.username);
   reply.clearCookie('access_token')
   return reply.send({ message: 'Logout successful' })
 }
@@ -323,6 +325,10 @@ export async function createUserWebauthn(
 
     const { username, authentication, sessionID, challenge } = req.body;
     try {
+      if (!(await tableExists('users'))) {
+        await createUsersTable();
+      }
+
       const connection = await pool.connect();
       
       const user = await connection.query(
@@ -339,6 +345,11 @@ export async function createUserWebauthn(
         return reply.code(401).send({ message: 'Invalid username or password' });
       }
 
+      const isActive = await isSessionActive(req.body.username)
+      if (isActive) {
+        await invalidateSession(req.body.username);
+      }
+
       const challenge_user = await connection.query(
         'SELECT challenge FROM challenge WHERE sessionID = $1',
         [sessionID]
@@ -353,19 +364,27 @@ export async function createUserWebauthn(
         origin: "http://localhost:5173",
         userVerified: true, // should be set if `userVerification` was set to `required` in the authentication options (default)
        // Optional. For device-bound credentials, you should verify the authenticator "usage" counter increased since last time.
-    }
+      }
 
-    const authenticationParsed = await  (await webauthnModule).server.verifyAuthentication(authentication, user.rows[0].credentialkey, expected)
+      const authenticationParsed = await  (await webauthnModule).server.verifyAuthentication(authentication, user.rows[0].credentialkey, expected)
+
+      const signature = authenticationParsed.signature
 
       console.log("authenticationParsed", authenticationParsed);
 
-      // reply.setCookie('access_token', authenticationParsed.signature, {
-      //   path:'/',
-      //   httpOnly: true,
-      //   secure: true,
-      // })
+      const payload = {
+        username: username,
+        signature: signature
+      }
+      const token = req.jwt.sign(payload)
 
-      return reply.code(201).send({status: true, user: username, access_token: authenticationParsed.signature , message: 'Login Successful'});
+      reply.setCookie('access_token', token, {
+        path:'/',
+        httpOnly: true,
+        secure: true,
+      })
+
+      return reply.code(201).send({status: true, payload, message: 'Login Successful'});
 
     } catch(err) {
       return reply.code(500).send(err);

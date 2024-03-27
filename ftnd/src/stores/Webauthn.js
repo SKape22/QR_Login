@@ -152,29 +152,23 @@ export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
         // password.value = '';
         startLogoutTimer();
         router.push('/success');
-        
     }
     })
     .catch(err => {
       console.error('Error:', err)
     })
+  } 
 
+  async function startLogoutTimer() {
+    console.log("I am here");
+    // Clear any existing timer
+    clearTimeout(logoutTimer);
 
-
-
-  
-    } 
-
-    async function startLogoutTimer() {
-      console.log("I am here");
-      // Clear any existing timer
-      clearTimeout(logoutTimer);
-  
-      // Set a new timer for 2 minutes
-      logoutTimer = setTimeout(() => {
-        handleLogout();
-      }, 2 * 60 * 1000); // 2 minutes in milliseconds
-    }
+    // Set a new timer for 2 minutes
+    logoutTimer = setTimeout(() => {
+      handleLogout();
+    }, 2 * 60 * 1000); // 2 minutes in milliseconds
+  }
     
   async function handleLogout() {
     const login_user = ref(JSON.parse(localStorage.getItem('QR-Login_user')));

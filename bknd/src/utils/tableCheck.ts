@@ -62,3 +62,20 @@ export async function createChallengeTable() {
     console.error('Error creating challenge table:', err);
   }
 }
+
+export async function createSessionTable() {
+    try {
+        const connection = await pool.connect();
+        const createTableQuery = `
+        CREATE TABLE IF NOT EXISTS session (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(255) UNIQUE NOT NULL,
+            accessToken VARCHAR(255) NOT NULL
+        );
+    `;
+    await connection.query(createTableQuery);
+    connection.release();
+    } catch (err) {
+        console.log('Error creating session table',err)
+    }
+}
