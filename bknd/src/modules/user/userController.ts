@@ -337,8 +337,6 @@ export async function createUserWebauthn(
       );
 
       // const passwordMatch = user && (await bcrypt.compare(password, user.rows[0].password));
-        
-
 
       if (!user ) {
         connection.release();
@@ -347,7 +345,7 @@ export async function createUserWebauthn(
 
       const isActive = await isSessionActive(req.body.username)
       if (isActive) {
-        await invalidateSession(req.body.username);
+        return reply.code(402).send({ message: 'Login failed: Active session found'})
       }
 
       const challenge_user = await connection.query(
