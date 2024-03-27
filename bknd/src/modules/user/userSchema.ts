@@ -3,13 +3,13 @@ import { buildJsonSchemas } from 'fastify-zod'
 
 const createUserSchema = z.object({
   email: z.string(),
-  password: z.string().min(6),
+
   username: z.string()
 })
 
 const createUserWauthnSchema = z.object({
   email: z.string(),
-  password: z.string().min(6),
+
   username: z.string(),
   challenge: z.string(),
   sessionID: z.string(),
@@ -50,7 +50,7 @@ const loginWauthSchema = z.object({
       required_error: 'Username is required',
       invalid_type_error: 'Username must be a string',
     }),
-    password: z.string().min(6),
+
     challenge: z.string(),
     sessionID: z.string(),
     authentication: z.object({

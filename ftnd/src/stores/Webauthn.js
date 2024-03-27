@@ -30,18 +30,21 @@ async function getCredentialID(username) {
 export const useSignupStoreWebauthn = defineStore('signup-webauthn', () => {
   const username = ref('');
   const email = ref('');
-  const password = ref('');
-  const rePassword = ref('');
+  // const password = ref('');
+  // const rePassword = ref('');
   const isValid = ref(true);
   const challenge = ref(null)
   const session = ref(null)
-  const validate = computed(() => {
-    if (password.value !== rePassword.value) {
-      isValid.value = false;
-      return false;
-    }
-    return true;
-  })
+  
+  // const validate = computed(() => {
+  //   if (password.value !== rePassword.value) {
+  //     isValid.value = false;
+  //     return false;
+  //   }
+  //   return true;
+  // })
+
+  const validate = true;
 
   async function handleSignupWA() {
     if (validate) {
@@ -70,7 +73,7 @@ export const useSignupStoreWebauthn = defineStore('signup-webauthn', () => {
         username: username.value,
         challenge: challenge.value,
         email: email.value,
-        password: password.value,
+        // password: password.value,
         sessionID: session.value,
         registration: registration,
       }
@@ -92,16 +95,17 @@ export const useSignupStoreWebauthn = defineStore('signup-webauthn', () => {
     }
   }
   
-  return { username, email, password, rePassword, challenge, handleSignupWA }
+  return { username, email, challenge, handleSignupWA }
 })
 
 
 export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
   const username = ref('');
-  const password = ref('');
+  // const password = ref('');
   const storedUserData = JSON.parse(localStorage.getItem('QR-Login_user')) || {};
   const isLogin = ref(!!storedUserData.username);
   const challenge = ref(null)
+  let logoutTimer = null;
 
   
   // console.log(is2faEnabled)
@@ -126,7 +130,7 @@ export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
     const payload = {
       username: username.value,
       challenge: challenge.value,
-      password: password.value,
+      // password: password.value,
       authentication: auth,
       sessionID: fetchedSession,
     }
@@ -145,8 +149,10 @@ export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
         isLogin.value = true;
 
         username.value = '';
-        password.value = '';
+        // password.value = '';
+        startLogoutTimer();
         router.push('/success');
+        
     }
     })
     .catch(err => {
@@ -158,6 +164,17 @@ export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
 
   
     } 
+
+    async function startLogoutTimer() {
+      console.log("I am here");
+      // Clear any existing timer
+      clearTimeout(logoutTimer);
+  
+      // Set a new timer for 2 minutes
+      logoutTimer = setTimeout(() => {
+        handleLogout();
+      }, 2 * 60 * 1000); // 2 minutes in milliseconds
+    }
     
   async function handleLogout() {
     const login_user = ref(JSON.parse(localStorage.getItem('QR-Login_user')));
@@ -170,11 +187,14 @@ export const useLoginStoreWebauthn = defineStore('login-webauthn', () => {
       localStorage.removeItem('QR-Login_user');
       router.push('/');
       isLogin.value = false;
+      clearTimeout(logoutTimer);
     } catch (err) {
       console.error('Error',err);
     }
+
+    
   }
     
-  return { username, password, isLogin, challenge, handleLogin, handleLogout }
+  return { username,isLogin, challenge, handleLogin, handleLogout }
 })
 

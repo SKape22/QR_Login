@@ -21,7 +21,7 @@ const SALT_ROUNDS = 10;
 export async function createUser(
   req: FastifyRequest<{Body: CreateUserInput}>, reply: FastifyReply) {
     console.log(req.body);
-    const {password, email, username} = req.body;  
+    const { email, username} = req.body;  
   
     try {
       
@@ -49,11 +49,11 @@ export async function createUser(
         return reply.status(400).send({ message: 'Email already exists' });
       }
     
-      const hash = await bcrypt.hash(password, SALT_ROUNDS)
+      // const hash = await bcrypt.hash(password, SALT_ROUNDS)
 
       const result = await connection.query(
-        'INSERT INTO users (username, email, password) values ($1,$2,$3);',
-        [`${username}`, `${email}`, `${hash}`]
+        'INSERT INTO users (username, email, password) values ($1,$2);',
+        [`${username}`, `${email}`]
       )  
       connection.release();
 
@@ -254,7 +254,7 @@ export async function verify2fa(
 
 export async function createUserWebauthn(
   req: FastifyRequest<{Body: CreateUserWauthnInput}>, reply: FastifyReply) {
-    const {password, email, username, challenge, sessionID, registration} = req.body;  
+    const { email, username, challenge, sessionID, registration} = req.body;  
 
     try {
 
@@ -285,7 +285,7 @@ export async function createUserWebauthn(
       //   return reply.status(400).send({ message: 'Email already exists' });
       // }
     
-      const hash = await bcrypt.hash(password, SALT_ROUNDS);
+      // const hash = await bcrypt.hash(password, SALT_ROUNDS);
 
       const challenge_user = await connection.query(
         'SELECT challenge FROM challenge WHERE sessionID = $1',
@@ -304,8 +304,8 @@ export async function createUserWebauthn(
       console.log("parsedRegistration",registrationParsed);
       const credentialJSON = JSON.stringify(registrationParsed.credential);
       const result = await connection.query(
-        'INSERT INTO users (username, email, password, webauthn, credentialKey) values ($1,$2,$3,$4,$5);',
-        [`${username}`, `${email}`, `${hash}`,`${true}`,`${credentialJSON}`]
+        'INSERT INTO users (username, email, webauthn, credentialKey) values ($1,$2,$3,$4);',
+        [`${username}`, `${email}`,`${true}`,`${credentialJSON}`]
       )  
       connection.release();
 
@@ -321,7 +321,7 @@ export async function createUserWebauthn(
   export async function loginWebauthn(
     req: FastifyRequest<{Body: LoginWauthInput}>, reply: FastifyReply) {
 
-    const { username, password, authentication, sessionID, challenge } = req.body;
+    const { username, authentication, sessionID, challenge } = req.body;
     try {
       const connection = await pool.connect();
       
@@ -330,11 +330,11 @@ export async function createUserWebauthn(
         [username],
       );
 
-      const passwordMatch = user && (await bcrypt.compare(password, user.rows[0].password));
+      // const passwordMatch = user && (await bcrypt.compare(password, user.rows[0].password));
         
 
 
-      if (!user || !passwordMatch) {
+      if (!user ) {
         connection.release();
         return reply.code(401).send({ message: 'Invalid username or password' });
       }
