@@ -91,7 +91,7 @@ export async function login(
 
       const isActive = await isSessionActive(req.body.username)
       if (isActive) {
-        return reply.code(402).send({ message: "Login failed: Session already exists"})
+        return reply.code(503).send({ message: "Login failed: Session already exists"})
       }
 
       const payload = {
@@ -119,6 +119,7 @@ export async function login(
 
 export async function logout(req: FastifyRequest, reply: FastifyReply) {
   reply.clearCookie('access_token')
+  await invalidateSession(req.user.username)
   return reply.send({ message: 'Logout successful' })
 }
 

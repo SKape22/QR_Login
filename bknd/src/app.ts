@@ -37,13 +37,14 @@ app.register(fCookie, {
 
 app.decorate('authenticate', async (req: FastifyRequest, reply: FastifyReply) => {
   let token = req.cookies.access_token || ""
-
-  // if (!token && req.headers.authorization) {
-  //   const authHeader = req.headers.authorization;
-  //   const [bearer, tokenFromHeader] = authHeader.split(' ');
-  //   if (bearer === 'Bearer' && tokenFromHeader)
-  //     token = tokenFromHeader;
-  // }
+  console.log("\n\ntoken:",token,"\n\n")
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    const [bearer, tokenFromHeader] = authHeader.split(' ');
+    if (bearer === 'Bearer' && tokenFromHeader)
+      token = tokenFromHeader;
+  }
+  console.log("\n\ntoken after:",token,"\n\n")
 
   if (!token) {
     return reply.status(401).send({ message: 'Authentication required' })
