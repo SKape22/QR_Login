@@ -2,6 +2,8 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { CreateUserInput, Enable2FAInput, LoginUserInput, Verify2FA } from "./user.schema";
 import bcrypt from 'bcrypt'
 import { Pool } from 'pg'
+import { tableExists, createUsersTable } from "../../utils/tableCheck";
+
 const speakeasy = require('speakeasy')
 const qrcode = require('qrcode')
 
@@ -21,6 +23,10 @@ export async function createUser(
     const {password, email, username} = req.body;  
   
     try {
+      if (!(await tableExists('users'))) {
+        await createUsersTable();
+      }
+
       const connection = await pool.connect();
 
       const usernameResult = await connection.query(
@@ -62,6 +68,10 @@ export async function login(
 
     const { username, password } = req.body;
     try {
+      if (!(await tableExists('users'))) {
+        await createUsersTable();
+      }
+
       const connection = await pool.connect();
       
       const user = await connection.query(
@@ -81,7 +91,6 @@ export async function login(
       connection.release()
 
       const payload = {
-        id: user.rows[0].id,
         email: user.rows[0].email,
         username: user.rows[0].username
       }
