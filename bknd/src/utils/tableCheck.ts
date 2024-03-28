@@ -70,7 +70,7 @@ export async function createSessionTable() {
         CREATE TABLE IF NOT EXISTS session (
             id SERIAL PRIMARY KEY,
             username VARCHAR(255) UNIQUE NOT NULL,
-            accessToken VARCHAR(255) NOT NULL
+            accessToken TEXT NOT NULL
         );
     `;
     await connection.query(createTableQuery);

@@ -40,23 +40,25 @@ app.register(fCookie, {
 app.decorate('authenticate', async (req: FastifyRequest, reply: FastifyReply) => {
   let token = req.cookies.access_token || ""
 
-  // if (!token && req.headers.authorization) {
-  //   const authHeader = req.headers.authorization;
-  //   const [bearer, tokenFromHeader] = authHeader.split(' ');
-  //   if (bearer === 'Bearer' && tokenFromHeader)
-  //     token = tokenFromHeader;
-  // }
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    const [bearer, tokenFromHeader] = authHeader.split(' ');
+    if (bearer === 'Bearer' && tokenFromHeader)
+      token = tokenFromHeader;
+  }
+
   if (!token) {
     return reply.status(401).send({ message: 'Authentication required' })
   }
 
   const decoded = req.jwt.verify<FastifyJWT['user']>(token)
-  req.user = decoded
 
   const isActive = await isSessionActive(decoded.username)
   if (!isActive) {
     return reply.status(401).send({ message: 'Session expired or invalid'})
   }
+
+  req.user = decoded
 })
 // app.register(userRoutes, {prefix: "api/v1/users"})
 
